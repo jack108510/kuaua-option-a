@@ -52,12 +52,12 @@ section{padding:60px 0}
 .cal-month h4{text-align:center;margin-bottom:8px;font-size:1rem}
 .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;text-align:center}
 .cal-hdr{font-size:0.7rem;padding:4px;opacity:0.5}
-.cal-day{padding:8px 4px;cursor:pointer;border-radius:4px;font-size:0.85rem;transition:background .15s}
-.cal-day:hover{background:rgba(0,0,0,0.05)}
-.cal-day.past{opacity:0.3;cursor:default;pointer-events:none}
-.cal-day.checkin{background:var(--coral);color:#fff;font-weight:700;border-radius:4px 0 0 4px}
-.cal-day.checkout{background:var(--coral);color:#fff;font-weight:700;border-radius:0 4px 4px 0}
-.cal-day.inrange{background:rgba(224,122,95,0.15)}
+.cal-day{padding:8px 4px;cursor:pointer;border-radius:50%;font-size:0.85rem;transition:all .2s;width:36px;height:36px;display:flex;align-items:center;justify-content:center;margin:2px auto}
+.cal-day:hover:not(.past){background:rgba(0,0,0,0.08);transform:scale(1.1)}
+.cal-day.past{opacity:0.25;cursor:default;pointer-events:none}
+.cal-day.checkin{background:var(--coral);color:#fff;font-weight:700;border-radius:50%}
+.cal-day.checkout{background:var(--coral);color:#fff;font-weight:700;border-radius:50%}
+.cal-day.inrange{background:rgba(224,122,95,0.2);border-radius:25%}
 #dateInfo{text-align:center;margin:16px 0;font-style:italic;color:var(--muted)}
 /* FORM */
 .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;max-width:600px;margin:0 auto}
@@ -190,6 +190,7 @@ footer a{color:var(--gold)}
   <h2 style="text-align:center;font-size:1.8rem;margin-bottom:8px;">Book Your Stay</h2>
   <p style="text-align:center;color:var(--muted);margin-bottom:24px;">Select your check-in and check-out dates</p>
   <div id="dateInfo">Click a date to select check-in</div>
+  <div style="text-align:center;margin-bottom:8px;"><button type="button" id="clearDates" style="display:none;padding:6px 18px;border:1px solid var(--coral);background:transparent;color:var(--coral);border-radius:20px;cursor:pointer;font-size:0.85rem;" onclick="clearDates()">Clear Dates</button></div>
   <div class="cal-wrap">
     <div class="cal-month"><h4></h4><div id="cal1"></div></div>
     <div class="cal-month"><h4></h4><div id="cal2"></div></div>
@@ -237,7 +238,7 @@ function buildCal(el,year,month){
       if(checkOut&&iso===checkOut.toISOString().slice(0,10)) cls+=' checkout';
       if(checkIn&&checkOut&&dt>checkIn&&dt<checkOut) cls+=' inrange';
     }
-    h+='<div class="'+cls+'" data-date="'+iso+'" onclick="pickDate(''+iso+'')">'+d+'</div>';
+    h+='<div class="'+cls+'" data-date="'+iso+'" onclick="pickDate(\''+iso+'\')">'+d+'</div>';
   }
   h+='</div>';
   el.innerHTML=h;
@@ -252,12 +253,14 @@ function pickDate(iso){
 }
 function updateInfo(){
   const el=document.getElementById('dateInfo');
-  if(!checkIn) el.innerHTML='Click a date to select check-in';
-  else if(!checkOut) el.innerHTML='Check-in: '+checkIn.toLocaleDateString('en-US',{month:'short',day:'numeric'})+' — now select check-out';
-  else el.innerHTML='Check-in: '+checkIn.toLocaleDateString('en-US',{month:'short',day:'numeric'})+' → Check-out: '+checkOut.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+  const cb=document.getElementById('clearDates');
+  if(!checkIn){el.innerHTML='Click a date to select check-in';if(cb)cb.style.display='none';}
+  else if(!checkOut){el.innerHTML='Check-in: '+checkIn.toLocaleDateString('en-US',{month:'short',day:'numeric'})+' — now select check-out';if(cb)cb.style.display='inline-block';}
+  else{const nights=Math.round((checkOut-checkIn)/(1000*60*60*24));el.innerHTML='Check-in: '+checkIn.toLocaleDateString('en-US',{month:'short',day:'numeric'})+' → Check-out: '+checkOut.toLocaleDateString('en-US',{month:'short',day:'numeric'})+' <strong>('+nights+' night'+(nights!==1?'s':'')+')</strong>';if(cb)cb.style.display='inline-block';}
   const ci=document.getElementById('fCheckIn');if(ci)ci.value=checkIn?checkIn.toISOString().slice(0,10):'';
   const co=document.getElementById('fCheckOut');if(co)co.value=checkOut?checkOut.toISOString().slice(0,10):'';
 }
+function clearDates(){checkIn=null;checkOut=null;selMode='in';renderCals();updateInfo();}
 function renderCals(){
   const now=new Date();
   let m=now.getMonth(),y=now.getFullYear();
